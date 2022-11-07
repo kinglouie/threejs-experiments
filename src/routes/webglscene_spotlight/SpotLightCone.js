@@ -11,6 +11,8 @@ class SpotLightCone extends THREE.Object3D {
 
 		this.light = light;
 		this.distance = distance;
+		this.attenuation = attenuation;
+		this.anglePower = anglePower;
 
 		this.light.updateMatrixWorld();
 		this.matrix = light.matrixWorld;
@@ -52,8 +54,9 @@ class SpotLightCone extends THREE.Object3D {
 		
 
 		this.cone.material.uniforms.lightColor.value.copy(this.light.color);
-
 		this.cone.material.uniforms.spotPosition.value.copy(this.cone.getWorldPosition(_vector))
+		this.cone.material.uniforms.anglePower.value = this.anglePower;
+		this.cone.material.uniforms.attenuation.value = this.attenuation;
 
 		// set cone target to lights target
 		_vector.setFromMatrixPosition( this.light.target.matrixWorld );

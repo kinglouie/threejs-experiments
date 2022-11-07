@@ -16,13 +16,6 @@
   <div id="webgl"></div>
   
   <style lang="scss">
-    #controlspane {
-      position: fixed;
-      width: 250px;
-      right:5px;
-      top:80px;
-      z-index: 1000;
-    }
     #webgl {
       position: fixed;
       top: 0;

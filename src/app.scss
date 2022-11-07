@@ -1,0 +1,30 @@
+@import 'scss/normalize';
+
+.container {
+  margin: 0 auto;
+  padding: 0 25px;
+  @include media-sm {
+    padding: 0 35px;
+  }
+  @include media-md {
+    padding: 0 50px;
+  }
+  @include media-lg {
+    padding: 0 65px;
+  }
+  @include media-2xl {
+    max-width: 1500px;
+  }
+}
+
+html {
+  font-size:10px;
+}
+
+
+body {
+  font-size: 1.6rem;
+  color: $color-snowstorm-1;
+  background-color: $color-polarnight-4;
+  transition: color, background .4s;
+}

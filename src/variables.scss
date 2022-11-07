@@ -1,0 +1,72 @@
+$header-height: 60px;
+$header-height-md: 90px;
+$color-polarnight-1: #4c566a;
+$color-polarnight-2: #434c5e;
+$color-polarnight-3: #3b4252;
+$color-polarnight-4: #2e3440;
+$color-snowstorm-1: #eceff4;
+$color-snowstorm-2: #e5e9f0;
+$color-snowstorm-3: #d8dee9;
+$color-frost-1: #8fbcbb;
+$color-frost-2: #88c0d0;
+$color-frost-3: #81a1c1;
+$color-frost-4: #5e81ac;
+$color-aurora-1: #bf616a;
+$color-aurora-2: #d08770;
+$color-aurora-3: #ebcb8b;
+$color-aurora-4: #a3be8c;
+$color-aurora-5: #b48ead;
+
+
+// BREAKPOINTS
+
+// Small tablets and large smartphones (landscape view)
+$screen-sm-min: 640px;
+
+// Small tablets (portrait view)
+$screen-md-min: 768px;
+
+// Tablets and small desktops
+$screen-lg-min: 1024px;
+
+// Large tablets and desktops
+$screen-xl-min: 1280px;
+
+// Extra large desktops
+$screen-2xl-min: 1536px;
+
+
+// Small devices
+@mixin media-sm {
+  @media (min-width: #{$screen-sm-min}) {
+      @content;
+  }
+}
+
+// Medium devices
+@mixin media-md {
+  @media (min-width: #{$screen-md-min}) {
+      @content;
+  }
+}
+
+// Large devices
+@mixin media-lg {
+  @media (min-width: #{$screen-lg-min}) {
+      @content;
+  }
+}
+
+// Extra large devices
+@mixin media-xl {
+  @media (min-width: #{$screen-xl-min}) {
+      @content;
+  }
+}
+
+// Extra large devices
+@mixin media-2xl {
+  @media (min-width: #{$screen-2xl-min}) {
+      @content;
+  }
+}

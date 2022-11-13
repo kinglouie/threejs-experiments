@@ -22,8 +22,8 @@ export default class FBO {
     };
 
     this.renderer = renderer;
-    this.width = 300;
-    this.height = 300;
+    this.width = 250;
+    this.height = 250;
     this.initAnimation = 0;
     this.amount = this.width * this.height;
     this.mainScene = mainScene;
@@ -83,7 +83,8 @@ export default class FBO {
         stencilBuffer: false
     });
 
-    this.textureMorphPositionA = this.createPositionTextureCube();
+    // this.textureMorphPositionA = this.createPositionTextureCube();
+    this.textureMorphPositionA = this.createPositionTextureDoubleSphere();
     //this.textureMorphPositionB = this.createPositionTextureDoubleSphere();
     this.textureMorphPositionB = await this.createPositionTextureLogo();
 
@@ -255,53 +256,101 @@ export default class FBO {
 
   createParticles() {
 
-    var position = new Float32Array(this.amount * 3);
-    var i3;
-    for(var i = 0; i < this.amount; i++ ) {
-        i3 = i * 3;
-        position[i3 + 0] = (i % this.width) / this.height;
-        position[i3 + 1] = ~~(i / this.width) / this.height;
-    }
     var geometry = new THREE.BufferGeometry();
-    geometry.setAttribute( 'position', new THREE.BufferAttribute( position, 3 ));
 
-    var material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge( [
-				THREE.UniformsLib.lights,
-				{
-          texturePosition: { type: 't', value: this.positionRenderTarget.texture },
-          color: { type: 'c', value: new THREE.Color(1.0, 1.0, 1.0) },
-          opacity: { type: 'f', value: 0.8 },
-        }
-      ]),
-      defines: {
-				USE_SHADOW: true
-			},
-      lights: true,
-      vertexShader: particlesVert,
-      fragmentShader: particlesFrag,
-      //blending: THREE.AdditiveBlending
+    // base particle geometry
+    const particleGeo = new THREE.IcosahedronGeometry(1);
+    console.log(particleGeo)
+
+    const vertices = [], reference = [], indices = [];
+
+    const totalVertices = particleGeo.getAttribute( 'position' ).count * 3 * this.amount;
+    for ( let i = 0; i < totalVertices; i ++ ) {
+      const pIndex = i % ( particleGeo.getAttribute( 'position' ).count * 3 );
+      vertices.push( particleGeo.getAttribute( 'position' ).array[ pIndex ] );
+    }
+    geometry.setAttribute( 'position', new THREE.BufferAttribute( new Float32Array( vertices ), 3 ) );
+
+    for ( let i = 0; i < particleGeo.getAttribute( 'position' ).count * this.amount; i++ ) {
+      const particle = Math.floor( i / particleGeo.getAttribute( 'position' ).count );
+      const j = ~~ particle;
+      const x = ( j % this.width ) / this.height;
+      const y = ~~ ( j / this.width ) / this.height;
+      reference.push( x, y );
+    }
+    geometry.setAttribute( 'reference', new THREE.BufferAttribute( new Float32Array( reference ), 2 ) );
+
+    if(particleGeo.index) {
+      for ( let i = 0; i < particleGeo.index.array.length * this.amount; i ++ ) {
+        const offset = Math.floor( i / particleGeo.index.array.length ) * ( particleGeo.getAttribute( 'position' ).count );
+        indices.push( particleGeo.index.array[ i % particleGeo.index.array.length ] + offset );
+      }
+      geometry.setIndex( indices );
+    }
+
+    geometry.computeVertexNormals()
+
+    // material
+    const m = new THREE.MeshStandardMaterial();
+    m.onBeforeCompile = ( shader ) => {
+      shader.uniforms.texturePosition = { value: null };
+      let token = '#define STANDARD';
+      let insert = /* glsl */`
+        attribute vec4 reference;
+        uniform sampler2D texturePosition;
+      `;
+      shader.vertexShader = shader.vertexShader.replace( token, token + insert );
+      token = '#include <begin_vertex>';
+      insert = /* glsl */`
+        vec3 transformed = texture2D( texturePosition, reference.xy ).xyz + position.xyz;
+      `;
+      shader.vertexShader = shader.vertexShader.replace( token, insert );
+      this.materialShader = shader;
+    };
+
+    this.particleMesh = new THREE.Mesh( geometry, m );
+
+    //distance
+    this.particleMesh.customDistanceMaterial = new THREE.MeshDistanceMaterial();
+    this.particleMesh.customDistanceMaterial.onBeforeCompile = shader => {
+      shader.uniforms.texturePosition = { value: null };
+      let token = '#define DISTANCE';
+      let insert = /* glsl */`
+        attribute vec4 reference;
+        uniform sampler2D texturePosition;
+      `;
+      shader.vertexShader = shader.vertexShader.replace( token, token + insert );
+      token = '#include <begin_vertex>';
+      insert = /* glsl */`
+        vec3 transformed = texture2D( texturePosition, reference.xy ).xyz + position.xyz;
+      `;
+      shader.vertexShader = shader.vertexShader.replace( token, insert );
+      this.distanceShader = shader;
+    };
+
+    //depth
+    this.particleMesh.customDepthMaterial = new THREE.MeshDepthMaterial({
+      depthPacking: THREE.RGBADepthPacking,
     });
-
-    this.particleMesh = new THREE.Points( geometry, material );
-
-    this.particleMesh.customDistanceMaterial = new THREE.ShaderMaterial( {
-      uniforms: {
-          texturePosition: { type: 't', value: this.positionRenderTarget.texture },
-          referencePosition: {type: 'v3',  value: new THREE.Vector3(0,0,30) },
-          nearDistance: {type: 'f', value: 1 },
-          farDistance: {type: 'f', value: 1000 }
-      },
-      vertexShader: particlesDistanceVert,
-      fragmentShader: particlesDistanceFrag,
-      depthTest: false,
-      depthWrite: false,
-      side: THREE.BackSide,
-      blending: THREE.NoBlending
-    });
+    this.particleMesh.customDepthMaterial.onBeforeCompile = shader => {
+      shader.uniforms.texturePosition = { value: null };
+      let token = '#include <common>';
+      let insert = /* glsl */`
+        attribute vec4 reference;
+        uniform sampler2D texturePosition;
+      `;
+      shader.vertexShader = shader.vertexShader.replace( token, token + insert );
+      token = '#include <begin_vertex>';
+      insert = /* glsl */`
+        vec3 transformed = texture2D( texturePosition, reference.xy ).xyz + position.xyz;
+      `;
+      shader.vertexShader = shader.vertexShader.replace( token, insert );
+      this.depthShader = shader;
+    };
 
     this.particleMesh.castShadow = true;
     this.particleMesh.receiveShadow = true;
+    this.particleMesh.frustumCulled = false;
     this.mainScene.add(this.particleMesh);
   }
 
@@ -324,8 +373,16 @@ export default class FBO {
     this.positionShader.uniforms.time.value += dt * 0.001;
     this.positionShader.uniforms.initAnimation.value = this.initAnimation;
 
-    this.particleMesh.material.uniforms.texturePosition.value = this.positionRenderTarget.texture;
-    this.particleMesh.customDistanceMaterial.uniforms.texturePosition.value = this.positionRenderTarget.texture;
+    if(this.materialShader) {
+      this.materialShader.uniforms.texturePosition.value = this.positionRenderTarget.texture;
+    }
+    if(this.distanceShader) {
+      this.distanceShader.uniforms.texturePosition.value = this.positionRenderTarget.texture;
+    }
+    if(this.depthShader) {
+      this.depthShader.uniforms.texturePosition.value = this.positionRenderTarget.texture;
+    }
+    
 
     this.renderer.setRenderTarget(this.positionRenderTarget)
     this.renderer.clear();

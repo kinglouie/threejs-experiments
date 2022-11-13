@@ -4,15 +4,19 @@
   const nav_links = [
     {
       title: 'Particles 1',
-      url:'/webglscene'
+      url:'/particles_fbo'
+    },
+    {
+      title: 'Particles Latest',
+      url:'/particles_fbo_latest'
     },
     {
       title: 'Particles Basic',
-      url:'/basic'
+      url:'/particles_basic'
     },
     {
       title: 'Spotlight',
-      url:'/webglscene_spotlight'
+      url:'/spotlight'
     }
   ]
 

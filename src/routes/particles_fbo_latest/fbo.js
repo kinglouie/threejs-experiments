@@ -259,8 +259,8 @@ export default class FBO {
     var geometry = new THREE.BufferGeometry();
 
     // base particle geometry
-    const particleGeo = new THREE.IcosahedronGeometry(1);
-    console.log(particleGeo)
+    const particleGeo = new THREE.IcosahedronGeometry();
+    //const particleGeo = new THREE.BoxGeometry(1);
 
     const vertices = [], reference = [], indices = [];
 
@@ -291,7 +291,12 @@ export default class FBO {
     geometry.computeVertexNormals()
 
     // material
-    const m = new THREE.MeshStandardMaterial();
+    const m = new THREE.MeshStandardMaterial({
+      metalness: .5,
+      roughness: .5,
+      emissive: 0x88c0d0,
+      emissiveIntensity: .3
+    });
     m.onBeforeCompile = ( shader ) => {
       shader.uniforms.texturePosition = { value: null };
       let token = '#define STANDARD';

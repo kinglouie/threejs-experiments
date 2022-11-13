@@ -53,8 +53,8 @@ export class ThreeScene {
 
     this.addEvents();
 
-    await this.addLogo()
-    this.addWall()
+    //await this.addLogo()
+    //this.addWall()
     this.addLights()
 
     this.fbo = new FBO();
@@ -208,15 +208,24 @@ export class ThreeScene {
 
 
 
-    this.light = new THREE.PointLight(0xffff00, 1, 0);
+    this.light = new THREE.PointLight(0x5e81ac, 1, 0);
     this.light.castShadow = true;
     this.light.position.set(this.parameters.lightPosX, this.parameters.lightPosY, this.parameters.lightPosZ);
-    this.light.shadow.mapSize.width = 2048; // default is 512
-    this.light.shadow.mapSize.height = 2048; // default is 512
+    this.light.shadow.mapSize.width = 512; // default is 512
+    this.light.shadow.mapSize.height = 512; // default is 512
     this.scene.add(this.light);
 
     const pointLightHelper = new THREE.PointLightHelper(this.light, 2);
     this.scene.add(pointLightHelper);
+
+
+
+    this.light2 = new THREE.PointLight(0xbf616a, 1, 0);
+    this.light2.castShadow = true;
+    this.light2.position.set(0, 50, 0);
+    this.light2.shadow.mapSize.width = 512; // default is 512
+    this.light2.shadow.mapSize.height = 512; // default is 512
+    this.scene.add(this.light2);
 
 
 
@@ -232,10 +241,10 @@ export class ThreeScene {
     // this.scene.add(spotLightHelper);
 
 
-    this.pointLightShadowMapViewer = new ShadowMapViewer( this.light );
-    const size = window.innerWidth * 0.3;
-    this.pointLightShadowMapViewer.size.set( size, size );
-    this.pointLightShadowMapViewer.position.set( 0, 0 );
+    // this.pointLightShadowMapViewer = new ShadowMapViewer( this.light );
+    // const size = window.innerWidth * 0.3;
+    // this.pointLightShadowMapViewer.size.set( size, size );
+    // this.pointLightShadowMapViewer.position.set( 0, 0 );
   }
 
   addEvents() {
@@ -253,6 +262,6 @@ export class ThreeScene {
     this.controls.update();
     this.fbo.update(dt);
     this.renderer.render(this.scene, this.camera);
-    this.pointLightShadowMapViewer.render(this.renderer);
+    // this.pointLightShadowMapViewer.render(this.renderer);
   }
 }

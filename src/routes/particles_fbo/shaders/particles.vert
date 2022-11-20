@@ -7,6 +7,8 @@ uniform sampler2D texturePosition;
 	#include <shadowmap_pars_vertex>
 #endif
 
+varying vec3 vViewPosition;
+
 void main() {
 
     vec3 pos = texture2D( texturePosition, position.xy ).xyz;
@@ -18,6 +20,7 @@ void main() {
 		// vertex
     vec4 worldPosition = modelMatrix * vec4( pos, 1.0 );
     vec4 mvPosition = viewMatrix * worldPosition;
+	vViewPosition = - mvPosition.xyz;
     gl_Position = projectionMatrix * mvPosition;
 
     gl_PointSize = 500.0 / length( mvPosition.xyz );

@@ -19,5 +19,7 @@ void main () {
 	float dist = length( vWorldPosition - referencePosition );
 	dist = ( dist - nearDistance ) / ( farDistance - nearDistance );
 	dist = saturate( dist ); // clamp to [ 0, 1 ]
-	gl_FragColor = vec4(0.0);
+	gl_FragColor = packDepthToRGBA( dist );
+
+	//gl_FragColor = vec4(0.0);
 }

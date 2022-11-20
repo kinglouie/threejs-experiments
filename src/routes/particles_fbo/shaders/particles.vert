@@ -13,11 +13,11 @@ void main() {
 
     vec3 pos = texture2D( texturePosition, position.xy ).xyz;
 
-		// normals
-		vec3 objectNormal = pos;
-		#include <defaultnormal_vertex>
+	// normals
+	vec3 objectNormal = pos;
+	#include <defaultnormal_vertex>
 
-		// vertex
+	// vertex
     vec4 worldPosition = modelMatrix * vec4( pos, 1.0 );
     vec4 mvPosition = viewMatrix * worldPosition;
 	vViewPosition = - mvPosition.xyz;
@@ -25,8 +25,8 @@ void main() {
 
     gl_PointSize = 500.0 / length( mvPosition.xyz );
 
-		#ifdef USE_SHADOW
-			#include <shadowmap_vertex>
-		#endif
+	#ifdef USE_SHADOW
+		#include <shadowmap_vertex>
+	#endif
     
 }

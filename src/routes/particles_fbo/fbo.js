@@ -1,10 +1,6 @@
 import * as THREE from 'three';
 import quad2Vert from './shaders/quad2.vert';
 import throughFrag from './shaders/through.frag';
-import particlesVert from './shaders/particles.vert';
-import particlesFrag from './shaders/particles.frag';
-import particlesDistanceVert from './shaders/particlesDistance.vert';
-import particlesDistanceFrag from './shaders/particlesDistance.frag';
 import positionFrag from './shaders/position.frag';
 
 import getPoints from "./modeltotexture";
@@ -81,9 +77,11 @@ export default class FBO {
         depthWrite: false,
         depthBuffer: false,
         stencilBuffer: false
-    });
+    }); 
 
-    this.textureMorphPositionA = this.createPositionTextureCube();
+    this.textureMorphPositionA = this.createPositionTextureDoubleSphere();
+    //this.textureMorphPositionA = this.createPositionTextureCube();
+    
     //this.textureMorphPositionB = this.createPositionTextureDoubleSphere();
     this.textureMorphPositionB = await this.createPositionTextureLogo();
 
@@ -265,40 +263,98 @@ export default class FBO {
     var geometry = new THREE.BufferGeometry();
     geometry.setAttribute( 'position', new THREE.BufferAttribute( position, 3 ));
 
-    var material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge( [
-				THREE.UniformsLib.lights,
-				{
-          texturePosition: { type: 't', value: this.positionRenderTarget.texture },
-          color: { type: 'c', value: new THREE.Color(1.0, 1.0, 1.0) },
-          opacity: { type: 'f', value: 0.8 },
-        }
-      ]),
-      defines: {
-				USE_SHADOW: true
-			},
-      lights: true,
-      vertexShader: particlesVert,
-      fragmentShader: particlesFrag,
-      //blending: THREE.AdditiveBlending
+    const material = new THREE.MeshStandardMaterial({
+      color: 0x999999,
+      metalness: 0,
+      roughness: 0,
+      // emissive: 0x88c0d0,
+      // emissiveIntensity: .6
     });
+    material.onBeforeCompile = ( shader ) => {
+      shader.uniforms.texturePosition = { value: null };
+      let token = '#define STANDARD';
+      let insert = /* glsl */`
+        uniform sampler2D texturePosition;
+      `;
+      shader.vertexShader = shader.vertexShader.replace( token, token + insert );
+
+      // set particle position
+      token = '#include <begin_vertex>';
+      insert = /* glsl */`
+        vec3 transformed = texture2D( texturePosition, position.xy ).xyz;
+      `;
+      shader.vertexShader = shader.vertexShader.replace( token, insert );
+
+      // set normal to something other than 0.0 for lighting to work
+      token = '#include <beginnormal_vertex>';
+      insert = /* glsl */`
+        vec3 objectNormal = vec3(0.1);
+      `;
+      shader.vertexShader = shader.vertexShader.replace( token, insert );
+
+      // set particle size
+      token = '#include <project_vertex>';
+      insert = /* glsl */`
+        gl_PointSize = 500.0 / length( mvPosition.xyz );
+      `;
+      shader.vertexShader = shader.vertexShader.replace( token, token + insert );
+
+      // make particle round
+      token = 'void main() {';
+      insert = /* glsl */`
+        float d = length( gl_PointCoord - .5 );
+        if( d > .5 ) discard;
+      `;
+      shader.fragmentShader = shader.fragmentShader.replace( token, token + insert );
+
+      // normals
+      token = '#include <normal_fragment_begin>';
+      insert = /* glsl */`
+        vec2 uv = (2.0 * gl_PointCoord.xy - 1.0) * vec2( 1.0, -1.0 );
+        vec3 n = vec3(uv, sqrt(1.0 - clamp(length(uv), 0.0, 1.0)));
+        vec3 normal = normalize(n);
+        vec3 geometryNormal = normal;
+      `;
+      shader.fragmentShader = shader.fragmentShader.replace( token, insert );
+
+      this.materialShader = shader;
+    };
 
     this.particleMesh = new THREE.Points( geometry, material );
 
-    this.particleMesh.customDistanceMaterial = new THREE.ShaderMaterial( {
-      uniforms: {
-          texturePosition: { type: 't', value: this.positionRenderTarget.texture },
-          referencePosition: {type: 'v3',  value: new THREE.Vector3(0,0,30) },
-          nearDistance: {type: 'f', value: 1 },
-          farDistance: {type: 'f', value: 1000 }
-      },
-      vertexShader: particlesDistanceVert,
-      fragmentShader: particlesDistanceFrag,
-      depthTest: false,
-      depthWrite: false,
-      side: THREE.BackSide,
-      blending: THREE.NoBlending
-    });
+    this.particleMesh.customDistanceMaterial = new THREE.MeshDistanceMaterial();
+    this.particleMesh.customDistanceMaterial.onBeforeCompile = shader => {
+      shader.uniforms.texturePosition = { value: null };
+      let token = '#define DISTANCE';
+      let insert = /* glsl */`
+        uniform sampler2D texturePosition;
+      `;
+      shader.vertexShader = shader.vertexShader.replace( token, token + insert );
+
+      // set particle position
+      token = '#include <begin_vertex>';
+      insert = /* glsl */`
+        vec3 transformed = texture2D( texturePosition, position.xy ).xyz + position.xyz;
+      `;
+      shader.vertexShader = shader.vertexShader.replace( token, insert );
+
+      // set particle size
+      token = '#include <project_vertex>';
+      insert = /* glsl */`
+        gl_PointSize = 300.0 / length( mvPosition.xyz );
+      `;
+      shader.vertexShader = shader.vertexShader.replace( token, token + insert );
+
+      // make particle round
+      token = 'void main () {';
+      insert = /* glsl */`
+        float d = length( gl_PointCoord - .5 );
+        if( d > .5 ) discard;
+      `;
+      shader.fragmentShader = shader.fragmentShader.replace( token, token + insert );
+
+      this.distanceShader = shader;
+    };
 
     this.particleMesh.castShadow = true;
     this.particleMesh.receiveShadow = true;
@@ -325,8 +381,12 @@ export default class FBO {
     this.positionShader.uniforms.time.value += dt * 0.001;
     this.positionShader.uniforms.initAnimation.value = this.initAnimation;
 
-    this.particleMesh.material.uniforms.texturePosition.value = this.positionRenderTarget.texture;
-    this.particleMesh.customDistanceMaterial.uniforms.texturePosition.value = this.positionRenderTarget.texture;
+    if(this.materialShader) {
+      this.materialShader.uniforms.texturePosition.value = this.positionRenderTarget.texture;
+    }
+    if(this.distanceShader) {
+      this.distanceShader.uniforms.texturePosition.value = this.positionRenderTarget.texture;
+    }
 
     this.renderer.setRenderTarget(this.positionRenderTarget)
     this.renderer.clear();

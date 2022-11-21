@@ -6,9 +6,6 @@ import { Pane } from 'tweakpane';
 import { gsap } from "gsap";
 import FBO from "./fbo";
 
-import testDistanceVert from './shaders/testDistance.vert';
-import testDistanceFrag from './shaders/testDistance.frag';
-
 export class ThreeScene {
   constructor(container) {
     this.container = document.querySelector(container)
@@ -55,7 +52,6 @@ export class ThreeScene {
 
     //await this.addLogo()
     //this.addWall()
-    //this.addDistanceTest()
     this.addLights()
 
     this.fbo = new FBO();
@@ -92,20 +88,6 @@ export class ThreeScene {
     const mat = new THREE.MeshStandardMaterial();
     const geometry = new THREE.BoxGeometry(50, 50, 2);
     const wall = new THREE.Mesh(geometry, mat);
-    wall.position.z = -20;
-    wall.castShadow = true;
-    wall.receiveShadow = true;
-    this.scene.add(wall);
-  }
-
-  addDistanceTest() {
-    let mat = new THREE.MeshStandardMaterial();
-    const geometry = new THREE.BoxGeometry(50, 50, 2);
-    let wall = new THREE.Mesh(geometry, mat);
-    wall.customDistanceMaterial = new THREE.ShaderMaterial({
-      vertexShader: testDistanceVert,
-      fragmentShader: testDistanceFrag,
-    });
     wall.position.z = -20;
     wall.castShadow = true;
     wall.receiveShadow = true;
@@ -217,20 +199,31 @@ export class ThreeScene {
 
 
   addLights() {
-    this.light = new THREE.PointLight(0xffff00, 1, 0);
+    const light = new THREE.HemisphereLight( 0xffffff, 0x000000, .5 );
+    this.scene.add( light );
+
+    this.light = new THREE.PointLight(0x88c0d0, 1, 0);
     this.light.castShadow = true;
     this.light.position.set(this.parameters.lightPosX, this.parameters.lightPosY, this.parameters.lightPosZ);
     this.light.shadow.mapSize.width = 2048; // default is 512
     this.light.shadow.mapSize.height = 2048; // default is 512
     this.scene.add(this.light);
 
+
+    this.light2 = new THREE.PointLight(0xbf616a, 1, 0);
+    this.light2.castShadow = true;
+    this.light2.position.set(30, 100, 30);
+    this.light2.shadow.mapSize.width = 2048; // default is 512
+    this.light2.shadow.mapSize.height = 2048; // default is 512
+    this.scene.add(this.light2);
+
     const pointLightHelper = new THREE.PointLightHelper(this.light, 2);
     this.scene.add(pointLightHelper);
 
-    this.pointLightShadowMapViewer = new ShadowMapViewer( this.light );
-    const size = window.innerWidth * 0.3;
-    this.pointLightShadowMapViewer.size.set( size, size );
-    this.pointLightShadowMapViewer.position.set( 0, 0 );
+    // this.pointLightShadowMapViewer = new ShadowMapViewer( this.light );
+    // const size = window.innerWidth * 0.3;
+    // this.pointLightShadowMapViewer.size.set( size, size );
+    // this.pointLightShadowMapViewer.position.set( 0, 0 );
   }
 
   addEvents() {
@@ -248,6 +241,6 @@ export class ThreeScene {
     this.controls.update();
     this.fbo.update(dt);
     this.renderer.render(this.scene, this.camera);
-    this.pointLightShadowMapViewer.render(this.renderer);
+    //this.pointLightShadowMapViewer.render(this.renderer);
   }
 }

@@ -22,8 +22,8 @@ export default class FBO {
     };
 
     this.renderer = renderer;
-    this.width = 250;
-    this.height = 250;
+    this.width = 75;
+    this.height = 75;
     this.initAnimation = 0;
     this.amount = this.width * this.height;
     this.mainScene = mainScene;
@@ -259,8 +259,8 @@ export default class FBO {
     var geometry = new THREE.BufferGeometry();
 
     // base particle geometry
-    const particleGeo = new THREE.IcosahedronGeometry();
-    //const particleGeo = new THREE.BoxGeometry(1);
+    //const particleGeo = new THREE.IcosahedronGeometry();
+    const particleGeo = new THREE.BoxGeometry(1);
 
     const vertices = [], reference = [], indices = [];
 
